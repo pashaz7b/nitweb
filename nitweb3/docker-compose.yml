@@ -1,0 +1,82 @@
+version: '3.8'
+
+services:
+  traefik:
+    image: traefik:v2.5
+    container_name: traefik
+    command:
+      - "--api.insecure=true"  # Enable Traefik dashboard
+      - "--providers.docker=true"  # Enable Docker provider
+      - "--entrypoints.web.address=:80"  # Define HTTP entrypoint
+      - "--entrypoints.websecure.address=:443"  # Define HTTPS entrypoint
+    ports:
+      - "80:80"  # Expose HTTP port
+      - "443:443"  # Expose HTTPS port
+      - "8080:8080"  # Expose Traefik dashboard
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"  # Docker socket for service discovery
+      - "./letsencrypt:/letsencrypt"  # Volume for certificates storage
+    networks:
+      - app-network
+
+  postgres:
+    container_name: postgres_container
+    image: postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-admin}
+      PGDATA: /data/postgres
+    volumes:
+      - postgres:/data/postgres
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    networks:
+      - app-network
+    restart: unless-stopped
+    expose:
+      - 5432
+
+  pgadmin:
+    container_name: pgadmin_container
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-pgadmin4@pgadmin.org}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin}
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    volumes:
+      - pgadmin:/var/lib/pgadmin
+    ports:
+      - "${PGADMIN_PORT:-5050}:80"
+    networks:
+      - app-network
+    restart: unless-stopped
+
+
+  iam:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: iam-service
+    #    ports:
+    #      - "8020:8020"
+    networks:
+      - app-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.iam-service.rule=Host(`nitweb.localhost`)"
+      - "traefik.http.routers.iam-service.entrypoints=web"
+      - "traefik.http.services.iam-service.loadbalancer.server.port=80"
+    restart: unless-stopped
+    depends_on:
+      - postgres
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  postgres:
+  pgadmin:
+  letsencrypt:
+    driver: local
