@@ -8,8 +8,8 @@ from sqlalchemy_utils import database_exists, create_database
 #
 # SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-#ULR_DATABASE = "postgresql://postgres:admin@localhost/nitweb4"
-ULR_DATABASE = "postgresql://postgres:admin@postgres_container:5432/nitweb4"
+#ULR_DATABASE = "postgresql://postgres:admin@localhost/nitweb5"
+ULR_DATABASE = "postgresql://postgres:admin@postgres_container:5432/nitweb50"
 
 
 engine = create_engine(ULR_DATABASE, echo=True)

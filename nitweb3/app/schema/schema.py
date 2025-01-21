@@ -71,3 +71,8 @@ class EmployeeHourlyLeaveRecordModel(EmployeeHourlyLeaveRecord):
 
 class EmployeeTeamUpdate(BaseModel):
     team_id: int
+
+
+class AdminSchema(BaseModel):
+    username: str
+    password: str
